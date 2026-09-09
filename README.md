@@ -1,123 +1,171 @@
-# AI Dev Team — MVP
+# AI Dev Team
 
-A small local Windows desktop app for coordinating three human-controlled ChatGPT browser profiles:
+**AI Dev Team** is a local Windows desktop app that coordinates three human-controlled ChatGPT browser profiles in a software workflow:
 
-- Developer
-- Reviewer
-- Tester
+`Developer → Reviewer → (FAIL → Developer / PASS → Tester) → (FAIL → Developer / PASS → Done)`
 
-The app implements this workflow:
+Current version: **1.0.0**
 
-`Developer -> Reviewer -> (Fail -> Developer / Pass -> Tester) -> (Fail -> Developer / Pass -> Done)`
+## What v1.0 includes
 
-## Safety / login model
+- Developer / Reviewer / Tester state machine with iteration counter
+- Separate Chrome/Edge profile per role
+- One-click **Copy + Open** handoff
+- Automatic role-specific prompt generation
+- Custom persistent instructions per role
+- Reviewer/Tester `PASS` / `FAIL` detection from the first response line
+- Project metadata: notes, local workspace and optional GitHub repository URL
+- Task creation, editing, deletion, reopening and search
+- Agent status indicators
+- Full results/handoff history
+- Activity log
+- Local SQLite persistence
+- Markdown export for an individual task
+- Portable JSON export for a project
+- SQLite database backup
+- Optional copy/open behavior after a workflow transition
+- Browser profile discovery for Chrome/Edge without reading cookies or session data
+- Windows build and release scripts
+- Migration support from the original MVP database
+- Unit tests for workflow, persistence, migrations, exports and browser launch command construction
 
-This MVP does **not** store or read:
+## Privacy / browser boundary
 
-- email/password
+AI Dev Team does **not** store or read:
+
+- ChatGPT email/password
 - cookies
 - session tokens
-- ChatGPT credentials
+- authentication headers
 
-It also does not attempt to bypass ChatGPT restrictions, anti-bot checks, rate limits, or login controls.
+It does not automate ChatGPT login, scrape the ChatGPT DOM, import sessions, bypass anti-bot controls, or bypass usage/rate limits.
 
-Browser support is intentionally limited to launching a configured Chrome/Edge executable with a configured profile directory and opening `https://chatgpt.com/`. Sending prompts and collecting results remains user-controlled through copy/paste.
+Browser assistance is intentionally limited to opening a configured Chrome/Edge profile and URL. Prompt sending and result collection remain user-controlled through copy/paste.
 
-## Features
+## Windows requirements
 
-- 3 fixed workflow roles: Developer, Reviewer, Tester
-- Separate browser profile configuration for each role
-- Overall task input
-- Automatic role-specific prompt generation
-- State machine with pass/fail loops
-- Iteration counter
-- Per-agent status snapshot
-- Activity log
-- Open Profile button
-- Copy Prompt button
-- Paste Clipboard / Record Result
-- Send to Next Role
-- Local projects/tasks/history using SQLite
-- GitHub service stub for future expansion
-
-## Windows prerequisites
-
-- Windows 10/11
+- Windows 10 or Windows 11
 - Python 3.11+ recommended
-- Chrome or Edge
+- Google Chrome or Microsoft Edge
 
 ## Run from source
 
-1. Extract the project.
+1. Clone/download this repository.
 2. Double-click `run.bat`.
-3. On first launch, dependencies are installed into `.venv`.
-4. Open the **Browser Profiles** tab.
-5. Set a browser executable and profile directory for each role.
+3. On first launch, a local `.venv` is created and dependencies are installed.
+4. Go to **Browser Profiles** and configure Developer, Reviewer and Tester.
+5. Create a project and start a task.
 
-Typical Chrome executable:
+Typical browser paths:
 
-`C:\Program Files\Google\Chrome\Application\chrome.exe`
+```text
+C:\Program Files\Google\Chrome\Application\chrome.exe
+C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+```
 
-Typical Edge executable:
+Typical profile directories:
 
-`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`
+```text
+Default
+Profile 1
+Profile 2
+Profile 3
+```
 
-Typical profile directory values:
+You can click **Detect profiles** to list Chrome/Edge profile names. The discovery code reads only Chromium's `Local State` profile-name metadata; it does not read cookies or login sessions.
 
-- `Default`
-- `Profile 1`
-- `Profile 2`
-- `Profile 3`
+## Daily workflow
 
-To find the exact Chrome profile directory, open the intended Chrome profile and visit `chrome://version`, then inspect **Profile Path**. The last folder name is usually what you enter into AI Dev Team.
+1. Start a task. Developer becomes Active.
+2. Click **Copy + Open**.
+3. Paste the prompt into the Developer ChatGPT profile.
+4. Paste Developer's response into AI Dev Team and click **Record + Send to Next Role**.
+5. Reviewer becomes Active. Repeat the handoff.
+6. Reviewer begins with `PASS` or `FAIL`.
+   - `FAIL` creates a new iteration and returns to Developer.
+   - `PASS` advances to Tester.
+7. Tester begins with `PASS` or `FAIL`.
+   - `FAIL` creates a new iteration and returns to Developer.
+   - `PASS` marks the task Done.
+8. A Done task can be reopened later as a new Developer iteration.
 
-## Normal workflow
+Keyboard shortcuts:
 
-1. Create/select a project.
-2. Enter task title + overall task and click **Start Task**.
-3. Developer becomes Active.
-4. Click **Open Profile**, then **Copy Prompt**.
-5. Paste the prompt into the intended ChatGPT browser window yourself.
-6. Paste the response back into AI Dev Team.
-7. For Developer, outcome is `Submitted`; click **Send to Next Role**.
-8. Reviewer uses `Pass` or `Fail`.
-9. Reviewer Fail increases iteration and returns to Developer.
-10. Reviewer Pass advances to Tester.
-11. Tester Fail increases iteration and returns to Developer.
-12. Tester Pass marks the task Done.
+- `Ctrl+Shift+C` — copy current prompt
+- `Ctrl+Shift+O` — open current profile
+- `Ctrl+Enter` — record result and send to next role
 
-## Local data location
+## Local data
 
-SQLite is stored locally at:
+The default database is stored at:
 
-`%LOCALAPPDATA%\AI Dev Team\aidevteam.db`
+```text
+%LOCALAPPDATA%\AI Dev Team\aidevteam.db
+```
 
-No ChatGPT session data is written to the database.
+Use **Settings → Backup Database** to create a safe SQLite copy.
 
-## Build Windows app
+## Tests
 
-Double-click:
+Run:
 
-`build.bat`
+```text
+test.bat
+```
 
-PyInstaller will create:
+or:
 
-`dist\AI Dev Team\AI Dev Team.exe`
+```bash
+python -m unittest discover -s tests -v
+```
 
-The default build is a folder-based executable because it is generally easier to troubleshoot than a single-file build.
+## Build a Windows app
+
+Run:
+
+```text
+build.bat
+```
+
+Output:
+
+```text
+dist\AI Dev Team\AI Dev Team.exe
+```
+
+For a distributable ZIP, run:
+
+```text
+release.bat
+```
 
 ## GitHub extension point
 
-`aidevteam/services/github_service.py` is intentionally a stub in this MVP. A future release can add repository selection, branch/worktree handling, diff handoff, and commit/test status without changing the state machine.
+`aidevteam/services/github_service.py` remains intentionally isolated as an extension point. A later version can add local repository status, diff/commit handoff or authenticated GitHub operations without coupling them to the core workflow or browser sessions.
 
-## Limitations of v0.1
+## Project structure
 
-- No automatic ChatGPT login
-- No automatic prompt injection or Send-button clicking
-- No browser DOM scraping
-- No cookie/session import
-- No ChatGPT restriction bypass
-- No automatic GitHub operations
-- Status parsing is manual via the Outcome selector rather than trusting free-form text
+```text
+main.py
+requirements.txt
+run.bat
+build.bat
+release.bat
+test.bat
 
-These limits are deliberate so the app remains local, transparent, and human-in-the-loop.
+aidevteam/
+  db.py
+  exporter.py
+  models.py
+  prompts.py
+  state_machine.py
+  ui.py
+  version.py
+  services/
+    browser_service.py
+    github_service.py
+
+tests/
+  test_core.py
+  test_migrations.py
+```

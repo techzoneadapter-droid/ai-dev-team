@@ -30,15 +30,27 @@ class Outcome(str, Enum):
     FAIL = "Fail"
 
 
-@dataclass
+@dataclass(frozen=True)
+class ProjectRecord:
+    id: int
+    name: str
+    description: str
+    workspace_path: str
+    repo_url: str
+    created_at: str
+    updated_at: str
+
+
+@dataclass(frozen=True)
 class BrowserProfile:
     role: Role
     browser_exe: str
     profile_dir: str
     url: str = "https://chatgpt.com/"
+    custom_instruction: str = ""
 
 
-@dataclass
+@dataclass(frozen=True)
 class TaskRecord:
     id: int
     project_id: int
@@ -51,7 +63,7 @@ class TaskRecord:
     updated_at: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class ResultRecord:
     id: int
     task_id: int
@@ -62,7 +74,7 @@ class ResultRecord:
     created_at: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class ActivityRecord:
     id: int
     task_id: int
