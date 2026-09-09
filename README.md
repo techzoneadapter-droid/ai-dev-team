@@ -4,9 +4,23 @@
 
 `Developer → Reviewer → (FAIL → Developer / PASS → Tester) → (FAIL → Developer / PASS → Done)`
 
-Current version: **1.0.0**
+Current version: **1.1.0**
 
-## What v1.0 includes
+## What v1.1 includes
+
+Everything from v1.0, plus an in-window **Connections & permissions** review panel for external tools/plugins.
+
+- GitHub, Vercel and future integrations appear in the main app window before use
+- Every integration has a local `Pending / Approved / Denied` decision
+- The app shows why the integration is requested and which permissions it wants
+- A connected provider is still blocked until you explicitly approve it in AI Dev Team
+- Connection checks can use installed provider CLIs such as `gh` or `vercel`
+- Approval actions are recorded in a local, non-secret audit trail
+- Future integration services can call the shared `PermissionBroker` before any external action
+
+Approval inside AI Dev Team is only the app's own permission gate. It does **not** replace GitHub/Vercel OAuth or login and it does not grant provider access by itself.
+
+## Core features
 
 - Developer / Reviewer / Tester state machine with iteration counter
 - Separate Chrome/Edge profile per role
@@ -27,14 +41,16 @@ Current version: **1.0.0**
 - Browser profile discovery for Chrome/Edge without reading cookies or session data
 - Windows build and release scripts
 - Migration support from the original MVP database
-- Unit tests for workflow, persistence, migrations, exports and browser launch command construction
+- Unit tests for workflow, persistence, migrations, exports, browser launch command construction and integration approval state
 
 ## Privacy / browser boundary
 
 AI Dev Team does **not** store or read:
 
 - ChatGPT email/password
+- provider passwords
 - cookies
+- OAuth/access tokens
 - session tokens
 - authentication headers
 
@@ -48,13 +64,21 @@ Browser assistance is intentionally limited to opening a configured Chrome/Edge 
 - Python 3.11+ recommended
 - Google Chrome or Microsoft Edge
 
+Optional integration checks:
+
+- GitHub CLI (`gh`) for GitHub connection status
+- Vercel CLI (`vercel`) for Vercel connection status
+
+Neither CLI is required for the core Developer → Reviewer → Tester workflow.
+
 ## Run from source
 
 1. Clone/download this repository.
 2. Double-click `run.bat`.
 3. On first launch, a local `.venv` is created and dependencies are installed.
-4. Go to **Browser Profiles** and configure Developer, Reviewer and Tester.
-5. Create a project and start a task.
+4. Review **Connections & permissions** in the main window and approve/deny any external integration you want.
+5. Go to **Browser Profiles** and configure Developer, Reviewer and Tester.
+6. Create a project and start a task.
 
 Typical browser paths:
 
@@ -94,6 +118,20 @@ Keyboard shortcuts:
 - `Ctrl+Shift+C` — copy current prompt
 - `Ctrl+Shift+O` — open current profile
 - `Ctrl+Enter` — record result and send to next role
+
+## Connections & permissions
+
+The permission panel is visible directly in the main window. For each provider you can:
+
+- inspect the requested purpose
+- inspect requested permissions
+- Approve
+- Deny
+- reset the decision to Pending
+- check whether the provider CLI is currently authenticated
+- open the provider's own account/authorization page
+
+The app stores only the local decision, non-secret connection status text and an audit timestamp. It does not copy provider credentials into SQLite.
 
 ## Local data
 
@@ -139,9 +177,13 @@ For a distributable ZIP, run:
 release.bat
 ```
 
-## GitHub extension point
+## Integration extension point
 
-`aidevteam/services/github_service.py` remains intentionally isolated as an extension point. A later version can add local repository status, diff/commit handoff or authenticated GitHub operations without coupling them to the core workflow or browser sessions.
+- `aidevteam/integrations.py` contains the reusable local permission broker and review panel.
+- `aidevteam/services/github_service.py` is approval-gated for future GitHub repository/PR operations.
+- `aidevteam/services/vercel_service.py` is approval-gated for future deployment operations.
+
+Future services should register their permission request in the broker and call `require_approval()` before any external read/write action.
 
 ## Project structure
 
@@ -156,6 +198,7 @@ test.bat
 aidevteam/
   db.py
   exporter.py
+  integrations.py
   models.py
   prompts.py
   state_machine.py
@@ -164,6 +207,7 @@ aidevteam/
   services/
     browser_service.py
     github_service.py
+    vercel_service.py
 
 tests/
   test_core.py
