@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>AI Dev Team Web</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div>
+        <div class="brand-row">
+          <h1>AI Dev Team</h1>
+          <span class="version">Web v2.0</span>
+        </div>
+        <p>Developer → Reviewer → Tester · plugin approvals · local browser storage</p>
+      </div>
+      <div class="top-actions">
+        <button class="ghost" id="exportBtn">Export</button>
+        <label class="button ghost file-label">Import<input id="importInput" type="file" accept="application/json" hidden /></label>
+        <button class="danger ghost" id="resetBtn">Reset</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar panel">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">PROJECT</div>
+            <select id="projectSelect"></select>
+          </div>
+          <button class="icon-btn" id="newProjectBtn" title="Tạo project">＋</button>
+        </div>
+
+        <div class="section-head tasks-head">
+          <div>
+            <div class="eyebrow">TASKS</div>
+            <span id="taskCount" class="muted">0 task</span>
+          </div>
+          <button class="icon-btn" id="newTaskFocusBtn" title="Tạo task">＋</button>
+        </div>
+        <input class="search" id="taskSearch" placeholder="Tìm task..." />
+        <div id="taskList" class="task-list"></div>
+
+        <div class="new-task-card">
+          <div class="eyebrow">NEW TASK</div>
+          <input id="taskTitle" placeholder="Tên task" />
+          <textarea id="taskBody" rows="6" placeholder="Mô tả tổng thể việc cần làm..."></textarea>
+          <button class="primary full" id="startTaskBtn">Start Task</button>
+        </div>
+      </aside>
+
+      <section class="main-col">
+        <nav class="tabs panel">
+          <button class="tab active" data-tab="workflow">Workflow</button>
+          <button class="tab" data-tab="plugins">Plugin Center <span id="pendingBadge" class="badge hidden">0</span></button>
+          <button class="tab" data-tab="history">History</button>
+          <button class="tab" data-tab="settings">Agents & Settings</button>
+        </nav>
+
+        <div id="workflowTab" class="tab-page active">
+          <section class="panel state-panel">
+            <div class="state-grid">
+              <div><span class="eyebrow">CURRENT ROLE</span><strong id="currentRole">—</strong></div>
+              <div><span class="eyebrow">ITERATION</span><strong id="iteration">—</strong></div>
+              <div><span class="eyebrow">STATUS</span><strong id="taskStatus">—</strong></div>
+              <div class="agent-pills" id="agentPills"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <div>
+                <div class="eyebrow">ORIGINAL TASK</div>
+                <h2 id="selectedTaskTitle">Chưa chọn task</h2>
+              </div>
+              <div class="row-actions">
+                <button class="ghost" id="editTaskBtn">Edit</button>
+                <button class="ghost" id="reopenTaskBtn">Reopen</button>
+                <button class="danger ghost" id="deleteTaskBtn">Delete</button>
+              </div>
+            </div>
+            <div id="originalTask" class="task-body muted">Tạo task mới để bắt đầu.</div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <div>
+                <div class="eyebrow">PROMPT FOR CURRENT ROLE</div>
+                <h2 id="promptRole">—</h2>
+              </div>
+              <div class="row-actions">
+                <button class="ghost" id="openChatBtn">Open Chat</button>
+                <button class="primary" id="copyPromptBtn">Copy Prompt</button>
+              </div>
+            </div>
+            <textarea id="promptOutput" class="prompt" rows="14" readonly></textarea>
+            <div id="pluginBlockers" class="notice hidden"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title-row">
+              <div>
+                <div class="eyebrow">RECORD AGENT RESULT</div>
+                <h2>Ghi kết quả và chuyển role</h2>
+              </div>
+              <select id="outcomeSelect"></select>
+            </div>
+            <textarea id="resultInput" rows="8" placeholder="Dán phản hồi từ agent hiện tại vào đây. Reviewer/Tester có thể bắt đầu bằng PASS hoặc FAIL."></textarea>
+            <div class="panel-footer">
+              <span id="detectedOutcome" class="muted"></span>
+              <div class="row-actions">
+                <button class="ghost" id="recordOnlyBtn">Record Only</button>
+                <button class="primary" id="sendNextBtn">Record + Send Next</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div id="pluginsTab" class="tab-page">
+          <section class="panel">
+            <div class="panel-title-row">
+              <div>
+                <div class="eyebrow">PLUGIN CENTER</div>
+                <h2>Quyền & kết nối dịch vụ</h2>
+                <p class="muted">Bất kỳ integration nào được task yêu cầu sẽ xuất hiện ở đây trước khi AI Dev Team coi nó là được phép sử dụng.</p>
+              </div>
+              <button class="primary" id="addPluginBtn">+ Add integration</button>
+            </div>
+            <div class="plugin-summary" id="pluginSummary"></div>
+            <div class="plugin-toolbar">
+              <input id="pluginSearch" class="search" placeholder="Tìm GitHub, Gmail, Slack..." />
+              <select id="pluginFilter">
+                <option value="all">Tất cả</option>
+                <option value="requested">Đang được yêu cầu</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="denied">Denied</option>
+              </select>
+            </div>
+            <div id="pluginList" class="plugin-list"></div>
+          </section>
+        </div>
+
+        <div id="historyTab" class="tab-page">
+          <section class="panel">
+            <div class="eyebrow">RESULTS & ACTIVITY</div>
+            <h2>Lịch sử task</h2>
+            <div id="historyList" class="history-list"></div>
+          </section>
+        </div>
+
+        <div id="settingsTab" class="tab-page">
+          <section class="panel">
+            <div class="eyebrow">AGENTS</div>
+            <h2>Developer / Reviewer / Tester</h2>
+            <p class="muted">Web app không thể ép hệ điều hành mở một Chrome profile cụ thể. Bạn có thể lưu nhãn tài khoản và Chat URL; Local Bridge sẽ được bổ sung riêng nếu cần mở profile local bằng một click.</p>
+            <div id="agentSettings" class="agent-settings"></div>
+          </section>
+          <section class="panel">
+            <div class="eyebrow">WEB APP DATA</div>
+            <h2>Lưu dữ liệu</h2>
+            <p>Dữ liệu hiện được lưu trong <strong>localStorage của trình duyệt</strong>. Không lưu password, cookie, OAuth token hay session token.</p>
+            <label class="check"><input type="checkbox" id="autoOpenNext" /> Tự mở Chat URL của role tiếp theo sau khi chuyển bước</label>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="modal">
+    <form method="dialog" class="modal-card" id="modalForm">
+      <div class="panel-title-row">
+        <div>
+          <div class="eyebrow" id="modalEyebrow">EDIT</div>
+          <h2 id="modalTitle">Modal</h2>
+        </div>
+        <button class="icon-btn" value="cancel">×</button>
+      </div>
+      <div id="modalBody"></div>
+      <div class="modal-actions">
+        <button class="ghost" value="cancel">Cancel</button>
+        <button class="primary" id="modalSaveBtn" value="default">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="./app-1.js"></script>
+  <script src="./app-2.js"></script>
+  <script src="./app-3.js"></script>
+</body>
+</html>
