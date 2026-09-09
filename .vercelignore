@@ -1,0 +1,10 @@
+aidevteam/
+tests/
+*.py
+*.bat
+*.spec
+*.db
+__pycache__/
+.venv/
+build/
+dist/
