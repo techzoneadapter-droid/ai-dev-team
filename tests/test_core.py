@@ -5,6 +5,7 @@ from pathlib import Path
 
 from aidevteam.db import Database
 from aidevteam.exporter import export_task_markdown
+from aidevteam.integrations import PermissionBroker
 from aidevteam.models import Outcome, Role, TaskStatus
 from aidevteam.prompts import build_prompt, detect_outcome
 from aidevteam.services.browser_service import build_launch_command, validate_chat_url
@@ -90,6 +91,24 @@ class CoreWorkflowTests(unittest.TestCase):
         self.assertEqual(cmd[-1], "https://chatgpt.com/")
         with self.assertRaises(ValueError):
             validate_chat_url("javascript:alert(1)")
+
+    def test_integration_permission_broker(self):
+        broker = PermissionBroker(self.db)
+        self.assertEqual(broker.decision("github"), "pending")
+        self.assertEqual(broker.decision("vercel"), "pending")
+        with self.assertRaises(PermissionError):
+            broker.require_approval("github")
+
+        broker.set_decision("github", "approved")
+        broker.require_approval("github")
+        self.assertEqual(broker.decision("github"), "approved")
+
+        broker.set_decision("github", "denied")
+        with self.assertRaises(PermissionError):
+            broker.require_approval("github")
+        audit = json.loads(self.db.get_setting("integration.audit", "[]"))
+        self.assertGreaterEqual(len(audit), 2)
+        self.assertTrue(all("token" not in json.dumps(item).lower() for item in audit))
 
 
 if __name__ == "__main__":
